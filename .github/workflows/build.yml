@@ -1,0 +1,40 @@
+name: GuardaTudo build
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extrair projeto
+        run: tar -xJf p.txz && ls -la GuardaTudo
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: |
+            17
+            21
+            25
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.6.0"
+      - name: SDK do runner no lugar do caminho do Windows
+        working-directory: GuardaTudo
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+      - name: Build + testes
+        working-directory: GuardaTudo
+        run: gradle --no-daemon --stacktrace assembleDebug testDebugUnitTest
+      - name: Lint
+        if: always()
+        continue-on-error: true
+        working-directory: GuardaTudo
+        run: gradle --no-daemon lintDebug
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: guardatudo-resultados
+          path: |
+            GuardaTudo/app/build/outputs/apk/debug/*.apk
+            GuardaTudo/app/build/reports/
+          if-no-files-found: ignore
