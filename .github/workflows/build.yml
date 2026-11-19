@@ -14,14 +14,17 @@ jobs:
           distribution: temurin
           java-version: |
             17
-            21
             25
+            21
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "9.6.0"
-      - name: SDK do runner no lugar do caminho do Windows
+      - name: Preparar (SDK do runner, Java 21 do Android Studio)
         working-directory: GuardaTudo
-        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          rm -f gradle/gradle-daemon-jvm.properties
+          java -version
       - name: Build + testes
         working-directory: GuardaTudo
         run: gradle --no-daemon --stacktrace assembleDebug testDebugUnitTest
@@ -30,6 +33,13 @@ jobs:
         continue-on-error: true
         working-directory: GuardaTudo
         run: gradle --no-daemon lintDebug
+      - name: Resultado do lint
+        if: always()
+        working-directory: GuardaTudo
+        run: |
+          f=$(ls app/build/intermediates/lint_intermediate_text_report/debug/*/lint-results-debug.txt app/build/reports/lint-results-debug.txt 2>/dev/null | head -1)
+          echo "arquivo: $f"
+          if [ -n "$f" ]; then grep -E "Error:|errors" "$f" | head -60; tail -3 "$f"; fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
