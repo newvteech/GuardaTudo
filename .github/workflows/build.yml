@@ -25,12 +25,17 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           rm -f gradle/gradle-daemon-jvm.properties
           java -version
+      - name: Aplicar correcoes do lint
+        working-directory: GuardaTudo/app/src/main/res
+        run: |
+          sed -i 's#<resources>#<resources xmlns:tools="http://schemas.android.com/tools">#; s#<item name="android:windowLightNavigationBar">#<item name="android:windowLightNavigationBar" tools:targetApi="27">#' values/themes.xml
+          sed -i '2a\    xmlns:app="http://schemas.android.com/apk/res-auto"' layout/item_item.xml
+          sed -i 's/android:tint=/app:tint=/g' layout/item_item.xml
+          sha256sum values/themes.xml layout/item_item.xml
       - name: Build + testes
         working-directory: GuardaTudo
         run: gradle --no-daemon --stacktrace assembleDebug testDebugUnitTest
       - name: Lint
-        if: always()
-        continue-on-error: true
         working-directory: GuardaTudo
         run: gradle --no-daemon lintDebug
       - name: Resultado do lint
